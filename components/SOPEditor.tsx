@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createDefaultSOP, ITEMS_PER_PAGE } from '../constants';
 import { SOPDocument, SOPStep } from '../types';
@@ -40,8 +41,9 @@ export const SOPEditor: React.FC<SOPEditorProps> = ({ onBack }) => {
   // Modal State
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   
-  // Save status for visual feedback - now only for manual saves
+  // Save/Export status
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [isExporting, setIsExporting] = useState(false);
   
   // Hidden file input ref for loading projects
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -164,8 +166,6 @@ export const SOPEditor: React.FC<SOPEditorProps> = ({ onBack }) => {
   };
 
   const executeReset = () => {
-      console.log("Resetting document...");
-      
       // Hard reset: clear history/future so you can't undo into a dirty state
       setHistory([]);
       setFuture([]);
@@ -178,8 +178,15 @@ export const SOPEditor: React.FC<SOPEditorProps> = ({ onBack }) => {
       localStorage.removeItem('sop_draft');
   };
 
-  const handleDownloadPDF = () => {
-    generatePDF('sop-container', doc.meta.title.replace(/[^a-z0-9]/gi, '_').toLowerCase());
+  const handleDownloadPDF = async () => {
+    setIsExporting(true);
+    
+    // Small delay to allow React to render the "Read Only" state which uses proper DIVs instead of textareas
+    // allowing html2canvas to capture the text wrapping correctly.
+    setTimeout(async () => {
+        await generatePDF('sop-container', doc.meta.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'sop_export');
+        setIsExporting(false);
+    }, 100);
   };
 
   const handleGenerateAI = async () => {
@@ -241,6 +248,14 @@ export const SOPEditor: React.FC<SOPEditorProps> = ({ onBack }) => {
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
       
+      {isExporting && (
+        <div className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-sm flex items-center justify-center flex-col">
+            <Loader2 size={48} className="animate-spin text-blue-600 mb-4" />
+            <h2 className="text-xl font-bold text-slate-800">Generating PDF...</h2>
+            <p className="text-slate-500">Please wait while we prepare your document.</p>
+        </div>
+      )}
+
       <ConfirmationModal 
         isOpen={isResetModalOpen}
         onClose={() => setIsResetModalOpen(false)}
@@ -324,7 +339,7 @@ export const SOPEditor: React.FC<SOPEditorProps> = ({ onBack }) => {
                 <Save size={16} className="mr-2" /> <span className="hidden sm:inline">Save Project</span>
             </Button>
             
-            <Button variant="primary" size="sm" onClick={handleDownloadPDF} className="ml-2" type="button">
+            <Button variant="primary" size="sm" onClick={handleDownloadPDF} className="ml-2" type="button" disabled={isExporting}>
                 <Download size={16} className="mr-2" /> Export PDF
             </Button>
         </div>
@@ -464,6 +479,9 @@ export const SOPEditor: React.FC<SOPEditorProps> = ({ onBack }) => {
                         onUpdateStep={updateStep}
                         onInputFocus={handleInputFocus}
                         onInputBlur={handleInputBlur}
+                        // Force readonly mode when exporting to render static DIVs instead of Textareas
+                        // This solves PDF text clipping/wrapping issues.
+                        isReadOnly={isExporting} 
                     />
                 ))}
             </div>

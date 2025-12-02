@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { SOPMetaData, SOPStep, ImageFitMode } from '../types';
 import { Upload, ImageIcon, Maximize, Minimize, RectangleHorizontal } from 'lucide-react';
@@ -72,6 +73,9 @@ export const SOPGridPage: React.FC<SOPGridPageProps> = ({
     if (onInputBlur) onInputBlur();
   };
 
+  // Reduced padding for better space utilization
+  const stepTextStyle = "w-full h-full bg-transparent text-xs text-slate-700 leading-relaxed p-1 resize-none focus:outline-none placeholder:text-slate-300 block";
+
   return (
     <div 
       className={`sop-page-export bg-white w-full mx-auto shadow-2xl flex flex-col ${isReadOnly ? '' : 'transition-shadow duration-300'}`} 
@@ -116,10 +120,7 @@ export const SOPGridPage: React.FC<SOPGridPageProps> = ({
                 ${index < 3 ? 'border-b' : ''}
               `}
             >
-              {/* Image Area - STRICT FIT TO FRAME 
-                  Using absolute positioning ensures the image never pushes the container size.
-                  The container size is strictly determined by grid (1fr) minus the fixed text area.
-              */}
+              {/* Image Area - STRICT FIT TO FRAME */}
               <div className="relative flex-grow w-full bg-slate-50/30 overflow-hidden">
                 <div className="absolute inset-0 flex items-center justify-center p-3">
                     {step?.image ? (
@@ -177,23 +178,31 @@ export const SOPGridPage: React.FC<SOPGridPageProps> = ({
                 )}
               </div>
 
-              {/* Text Area - Fixed Height & Shrink-0 to prevent collapse */}
-              <div className="h-[100px] shrink-0 w-full px-4 py-3 flex flex-col bg-white border-t border-slate-100 relative z-20">
-                <div className="flex items-center justify-between mb-1.5">
+              {/* Text Area - Height 120px */}
+              {/* Reduced padding to prevent clipping on PDF export */}
+              <div className="h-[120px] shrink-0 w-full px-3 py-1.5 flex flex-col bg-white border-t border-slate-100 relative z-20">
+                <div className="flex items-center justify-between mb-0.5">
                    <span className="text-[10px] font-bold text-blue-600/70 uppercase tracking-wider">Step {stepNumber}</span>
                 </div>
                 
                 {isReadOnly ? (
-                  <p className="text-sm text-slate-700 leading-snug">{step ? step.description : ''}</p>
+                  // Render as div for export to ensure exact WYSIWYG match with no scrollbars
+                  <div 
+                    className={`${stepTextStyle} whitespace-pre-wrap break-words overflow-hidden`}
+                    style={{ boxSizing: 'border-box' }}
+                  >
+                    {step ? step.description : ''}
+                  </div>
                 ) : (
                   step ? (
                     <textarea
-                      className="w-full h-full resize-none bg-transparent focus:bg-slate-50 focus:outline-none rounded text-sm text-slate-700 placeholder:text-slate-300 transition-colors leading-snug p-2 -ml-2"
+                      className={stepTextStyle}
                       value={step.description}
                       onChange={(e) => onUpdateStep(step.id, { description: e.target.value })}
                       onFocus={handleTextFocus}
                       onBlur={handleTextBlur}
                       placeholder="Enter step description..."
+                      style={{ boxSizing: 'border-box' }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-slate-200 text-xs italic">
