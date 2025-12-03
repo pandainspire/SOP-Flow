@@ -15,21 +15,33 @@ export const generatePDF = async (elementId: string, filename: string) => {
     // Ensure top scroll to prevent offset issues
     window.scrollTo(0, 0);
 
-    // CRITICAL: Wait for fonts to be fully loaded before capturing
-    // This prevents the "clipping all over the place" issue on deployed sites
+    // CRITICAL: Wait for fonts to be fully loaded
     await document.fonts.ready;
 
+    // CRITICAL: Wait for all images within the element to be fully loaded
+    const images = Array.from(element.querySelectorAll('img'));
+    const imagePromises = images.map((img) => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve; // Resolve even on error to avoid hanging
+      });
+    });
+    await Promise.all(imagePromises);
+
     // Small additional safety delay for layout stabilization
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise(resolve => setTimeout(resolve, 200));
 
     const canvas = await window.html2canvas(element, {
-      scale: 2, // Higher scale for better quality
+      scale: 3, // Higher scale for better quality
       useCORS: true, // Allow loading cross-origin images
       logging: false,
       windowWidth: 1123, // A4 Landscape width in pixels (approx) at 96dpi
       letterRendering: true, // Helps with text kerning and clipping
       allowTaint: true,
       backgroundColor: '#ffffff', // Ensure white background
+      scrollY: 0, // Force scroll to top for capture
+      scrollX: 0,
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 1.0);
@@ -71,10 +83,12 @@ export const generatePDF = async (elementId: string, filename: string) => {
              
              // Capture individual pages with same settings
              const pageCanvas = await window.html2canvas(pages[i] as HTMLElement, {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
                 letterRendering: true,
-                allowTaint: true
+                allowTaint: true,
+                scrollY: 0,
+                scrollX: 0,
              });
              const pageImg = pageCanvas.toDataURL('image/jpeg', 0.95); // 0.95 quality is sufficient and smaller
              multiPdf.addImage(pageImg, 'JPEG', 0, 0, 297, 210);

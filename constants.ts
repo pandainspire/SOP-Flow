@@ -28,3 +28,5 @@ export const createDefaultSOP = (): SOPDocument => ({
 });
 
 export const ITEMS_PER_PAGE = 6;
+
+export const COMPANY_LOGO = "";

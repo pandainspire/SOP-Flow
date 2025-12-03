@@ -181,12 +181,12 @@ export const SOPEditor: React.FC<SOPEditorProps> = ({ onBack }) => {
   const handleDownloadPDF = async () => {
     setIsExporting(true);
     
-    // Small delay to allow React to render the "Read Only" state which uses proper DIVs instead of textareas
-    // allowing html2canvas to capture the text wrapping correctly.
+    // Extended delay to ensure React has fully rendered the "Read Only" state (using DIVs instead of Textareas)
+    // and that all fonts/images are stable before HTML2Canvas snapshots the DOM.
     setTimeout(async () => {
         await generatePDF('sop-container', doc.meta.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'sop_export');
         setIsExporting(false);
-    }, 100);
+    }, 800);
   };
 
   const handleGenerateAI = async () => {
