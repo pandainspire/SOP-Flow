@@ -18,19 +18,20 @@ export const generatePDF = async (elementId: string, filename: string) => {
     // CRITICAL: Wait for fonts to be fully loaded
     await document.fonts.ready;
 
-    // CRITICAL: Wait for all images within the element to be fully loaded
+    // CRITICAL: Force load all images inside the export container
+    // This ensures html2canvas doesn't render blank squares for images that haven't decoded yet.
     const images = Array.from(element.querySelectorAll('img'));
     const imagePromises = images.map((img) => {
-      if (img.complete) return Promise.resolve();
-      return new Promise((resolve) => {
-        img.onload = resolve;
-        img.onerror = resolve; // Resolve even on error to avoid hanging
-      });
+        if (img.complete) return Promise.resolve();
+        return new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve(); // Don't block on error
+        });
     });
     await Promise.all(imagePromises);
 
-    // Small additional safety delay for layout stabilization
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Small additional safety delay for React layout stabilization
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const canvas = await window.html2canvas(element, {
       scale: 3, // Higher scale for better quality
@@ -68,11 +69,9 @@ export const generatePDF = async (elementId: string, filename: string) => {
     }
 
     // Centering vertically if aspect ratio differs slightly
-    const yOffset = (pdfHeight - finalHeight) / 2;
-
     pdf.addImage(imgData, 'JPEG', 0, 0, finalWidth, finalHeight);
     
-    // Multi-page logic
+    // Multi-page logic if multiple pages exist in the DOM
     const pages = document.querySelectorAll('.sop-page-export');
     
     if (pages.length > 0) {
@@ -90,12 +89,12 @@ export const generatePDF = async (elementId: string, filename: string) => {
                 scrollY: 0,
                 scrollX: 0,
              });
-             const pageImg = pageCanvas.toDataURL('image/jpeg', 0.95); // 0.95 quality is sufficient and smaller
+             const pageImg = pageCanvas.toDataURL('image/jpeg', 0.95); 
              multiPdf.addImage(pageImg, 'JPEG', 0, 0, 297, 210);
         }
         multiPdf.save(`${filename}.pdf`);
     } else {
-        // Fallback for single view
+        // Fallback for single view if class not found (shouldn't happen with current logic)
         pdf.save(`${filename}.pdf`);
     }
 

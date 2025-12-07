@@ -74,8 +74,9 @@ export const SOPGridPage: React.FC<SOPGridPageProps> = ({
   };
 
   // Explicit pixel sizes help consistency between screen and PDF export
+  // We use strict line-heights to prevent vertical expansion differences across OSs
   const stepTextStyle = isReadOnly 
-    ? "w-full h-full bg-transparent text-[11px] text-slate-800 leading-[1.4] p-1 resize-none overflow-hidden block font-medium"
+    ? "w-full h-full bg-transparent text-[11px] text-slate-800 leading-[14px] p-1 resize-none overflow-hidden block font-medium"
     : "w-full h-full bg-transparent text-xs text-slate-800 leading-snug p-1 resize-none focus:outline-none placeholder:text-slate-300 block font-medium";
 
   return (
@@ -90,9 +91,9 @@ export const SOPGridPage: React.FC<SOPGridPageProps> = ({
       }}
     >
       
-      {/* Header - Flexbox centering prevents clipping compared to hard padding */}
+      {/* Header - Fixed height 16mm */}
       <header className="bg-[#00529b] text-white px-8 flex justify-between items-center h-[16mm] shrink-0 overflow-hidden">
-        <h1 className="text-lg font-bold tracking-wide w-full truncate leading-normal flex items-center h-full pt-1">
+        <h1 className="text-lg font-bold tracking-wide w-full truncate flex items-center h-full pt-0.5">
             Standard Operating Procedure: {meta.title || <span className="opacity-50 font-normal ml-1">[Title Here]</span>}
         </h1>
         <div className="shrink-0 ml-4 opacity-90 flex items-center justify-center h-full">
@@ -124,27 +125,29 @@ export const SOPGridPage: React.FC<SOPGridPageProps> = ({
                 ${index < 3 ? 'border-b' : ''}
               `}
             >
-              {/* Image Area */}
+              {/* Image Area - Absolute positioning ensures frame fit */}
               <div className="relative flex-grow w-full bg-slate-50/30 overflow-hidden">
                 <div className="absolute inset-0 flex items-center justify-center p-0.5">
                     {step?.image ? (
                       isReadOnly ? (
                         // EXPORT MODE: High-res/Standard DOM structure
-                        // We avoid object-fit in favor of max-width/height centering to please html2canvas
+                        // We use Flexbox centering + max-width/height which html2canvas renders perfectly crisp.
+                        // We avoid 'object-fit' CSS here as html2canvas support for it is spotty.
                         <div className="w-full h-full flex items-center justify-center bg-white overflow-hidden">
                            <img 
                              src={step.image}
                              className={`
-                               block
+                               block p-0 m-0
                                ${fitMode === 'contain' ? 'max-w-full max-h-full w-auto h-auto' : ''}
                                ${fitMode === 'cover' ? 'w-full h-full object-cover' : ''}
                                ${fitMode === 'fill' ? 'w-full h-full' : ''}
                              `}
                              alt=""
+                             style={fitMode === 'contain' ? { maxWidth: '100%', maxHeight: '100%' } : {}}
                            />
                         </div>
                       ) : (
-                        // EDITOR MODE: Standard CSS object-fit for immediate feedback
+                        // EDITOR MODE: Standard CSS object-fit for immediate visual feedback
                         <img 
                           src={step.image} 
                           alt={`Step ${stepNumber}`} 
@@ -204,7 +207,7 @@ export const SOPGridPage: React.FC<SOPGridPageProps> = ({
                 )}
               </div>
 
-              {/* Text Area */}
+              {/* Text Area - Fixed height 120px */}
               <div className="h-[120px] shrink-0 w-full px-3 py-1.5 flex flex-col bg-white border-t border-slate-100 relative z-20">
                 <div className="flex items-center justify-between mb-0.5">
                    <span className="text-[10px] font-bold text-blue-600/70 uppercase tracking-wider">Step {stepNumber}</span>
@@ -238,25 +241,25 @@ export const SOPGridPage: React.FC<SOPGridPageProps> = ({
         })}
       </div>
 
-      {/* Footer - Precise pixel control for exports */}
+      {/* Footer - Fixed height 12mm */}
       <footer className="h-[12mm] border border-slate-200 border-t-0 bg-white text-slate-500 text-[9px] uppercase tracking-wide flex items-stretch divide-x divide-slate-200 shrink-0 overflow-hidden">
-        <div className="px-4 flex flex-col justify-center w-1/5 py-1">
+        <div className="px-4 flex flex-col justify-center w-1/5 py-0.5">
           <span className="text-[7px] text-slate-400 font-bold mb-px leading-none">SOP ID</span>
           <span className="font-medium text-slate-900 truncate leading-none pt-0.5">{meta.sopId}</span>
         </div>
-        <div className="px-4 flex flex-col justify-center w-1/6 py-1">
+        <div className="px-4 flex flex-col justify-center w-1/6 py-0.5">
           <span className="text-[7px] text-slate-400 font-bold mb-px leading-none">Date</span>
           <span className="font-medium text-slate-900 truncate leading-none pt-0.5">{formatDate(meta.date)}</span>
         </div>
-        <div className="px-4 flex flex-col justify-center flex-grow py-1">
+        <div className="px-4 flex flex-col justify-center flex-grow py-0.5">
           <span className="text-[7px] text-slate-400 font-bold mb-px leading-none">Author</span>
           <span className="font-medium text-slate-900 truncate leading-none pt-0.5">{meta.author}</span>
         </div>
-        <div className="px-4 flex flex-col justify-center w-1/6 py-1">
+        <div className="px-4 flex flex-col justify-center w-1/6 py-0.5">
            <span className="text-[7px] text-slate-400 font-bold mb-px leading-none">Cycle Time</span>
            <span className="font-medium text-slate-900 truncate leading-none pt-0.5">{meta.cycleTime}</span>
         </div>
-        <div className="px-4 flex flex-col justify-center w-1/6 py-1">
+        <div className="px-4 flex flex-col justify-center w-1/6 py-0.5">
            <span className="text-[7px] text-slate-400 font-bold mb-px leading-none">Version</span>
            <span className="font-medium text-slate-900 truncate leading-none pt-0.5">{meta.version}</span>
         </div>
